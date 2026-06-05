@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  dashboard-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_ENV: dev
+    container_name: dashboard-dev
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+
+  dashboard-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_ENV: prod
+    container_name: dashboard-prod
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001

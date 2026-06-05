@@ -1,0 +1,66 @@
+name: CI/CD - Build and Deploy to Server
+
+on:
+  push:
+    branches: [ "main" ] # Sadece main branch'e kod pushlandığında çalışır
+  workflow_dispatch: # Manuel tetikleme seçeneği de eklenir
+
+env:
+  REGISTRY: ghcr.io
+  # GitHub imaj adını otomatik küçük harfe çevirip repo ismiyle kaydeder
+  IMAGE_NAME: ${{ github.repository }} 
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # GHCR'a imaj yükleyebilmek için yazma izni
+
+    steps:
+      - name: Kodları Getir
+        uses: actions/checkout@v4
+
+      - name: Docker Buildx Kurulumu
+        uses: docker/setup-buildx-action@v3
+
+      - name: GitHub Container Registry'e Giriş Yap
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # GitHub'ın otomatik ürettiği geçici token
+
+      - name: Docker İmajını Derle ve GHCR'a Yükle
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha # Derleme sürecini hızlandırmak için önbellek
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push # Önce derleme işinin bitmesini bekle
+
+    steps:
+      - name: Sunucuya SSH ile Bağlan ve Güncelle
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Eğer sunucuda proje klasörü yoksa oluştur, varsa içine gir
+            mkdir -p ~/app && cd ~/app
+            
+            # Sunucuda Docker Registry'e giriş yap (Eski imajları çekebilmek için)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Docker Compose ile yeni imajı çek ve ayağa kaldır
+            docker compose pull
+            docker compose up -d --remove-orphans
+            
+            # Eski ve kullanılmayan imajları temizle (Sunucuda yer açmak için)
+            docker image prune -f
