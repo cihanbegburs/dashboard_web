@@ -11,6 +11,7 @@ RUN npm install
 
 COPY tsconfig.json tsconfig.node.json vite.config.ts ./
 COPY src ./src
+COPY dist ./dist
 COPY index.html ./
 
 # Build based on environment
