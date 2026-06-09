@@ -60,7 +60,7 @@ jobs:
             
             # Docker Compose ile yeni imajı çek ve ayağa kaldır
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose up --build dashboard-prod
             
             # Eski ve kullanılmayan imajları temizle (Sunucuda yer açmak için)
             docker image prune -f
