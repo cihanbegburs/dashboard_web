@@ -10,6 +10,7 @@ RUN npm install
 COPY tsconfig.json tsconfig.node.json vite.config.ts ./
 COPY src ./src
 COPY index.html ./
+COPY public ./public
 
 RUN if [ "$BUILD_ENV" = "prod" ]; then \
       npm run build:prod; \
@@ -19,7 +20,7 @@ RUN if [ "$BUILD_ENV" = "prod" ]; then \
 
 # Final image sadece build edilmiş dist dosyalarını içerir
 FROM nginx:stable-alpine AS runner
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist/. /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3001
 CMD ["nginx", "-g", "daemon off;"]
