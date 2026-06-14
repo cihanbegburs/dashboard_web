@@ -20,7 +20,8 @@ RUN if [ "$BUILD_ENV" = "prod" ]; then \
 
 # Final image sadece build edilmiş dist dosyalarını içerir
 FROM nginx:stable-alpine AS runner
+ARG BUILD_ENV=prod
 COPY --from=builder /app/dist/. /usr/share/nginx/html/
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.${BUILD_ENV}.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3001
 CMD ["nginx", "-g", "daemon off;"]
